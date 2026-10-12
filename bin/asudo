@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# asudo [--reason TEXT] [--] CMD...
+#
+# sudo with the password asked through secret-prompt, showing the reason and
+# the exact command being authorised. The password goes from the panel to sudo
+# and nowhere else. See docs/design.md.
+
+set -euo pipefail
+
+# The panel next to this script when installed together, else the one on PATH.
+here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+panel=$here/secret-prompt
+if [[ ! -x $panel ]] && ! panel=$(command -v secret-prompt); then
+  echo "asudo: secret-prompt is neither next to this script nor on PATH" >&2
+  exit 127
+fi
+
+# The command as a person would type it: plain words bare, anything else in
+# single quotes. Only for showing in the panel, never for running.
+display() {
+  local out="" arg q="'"
+  for arg in "$@"; do
+    if [[ $arg =~ ^[A-Za-z0-9_./:=@%+,#-]+$ ]]; then
+      out+="$arg "
+    elif [[ $arg != *"$q"* ]]; then
+      out+="$q$arg$q "
+    elif [[ $arg != *[\$\`\"\\]* ]]; then
+      out+="\"$arg\" "
+    else
+      out+="$q${arg//$q/$q\\$q$q}$q "
+    fi
+  done
+  printf '%s' "${out% }"
+}
+
+usage() {
+  echo "usage: asudo [--reason TEXT] [--] CMD..." >&2
+  exit 2
+}
+
+reason=""
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --reason)
+      [[ $# -ge 2 ]] || usage
+      reason=$2
+      shift 2
+      ;;
+    --) shift; break ;;
+    -*) echo "asudo: unknown option $1" >&2; usage ;;
+    *) break ;;
+  esac
+done
+[[ $# -gt 0 ]] || usage
+
+dir=$(mktemp -d)
+trap 'rm -rf "$dir"' EXIT
+shown=$(display "$@")
+
+# sudo calls its askpass once per attempt, so a call count above one means the
+# previous password was wrong; plain /bin/bash because sudo runs it directly.
+askpass=$dir/askpass
+# shellcheck disable=SC2016 # the $ expressions belong to the generated script
+{
+  printf '#!/bin/bash\n'
+  printf 'n=$(( $(cat %q 2>/dev/null || echo 0) + 1 )); echo "$n" > %q\n' "$dir/count" "$dir/count"
+  printf 'retry=(); [ "$n" -gt 1 ] && retry=(--error "Wrong password, try again")\n'
+  printf 'exec %q --title %q --button Authenticate --placeholder Password --command %q' \
+    "$panel" "Administrator password" "$shown"
+  [[ -n $reason ]] && printf ' --message %q' "$reason"
+  printf ' "${retry[@]}"\n'
+} >"$askpass"
+chmod 700 "$askpass"
+
+SUDO_ASKPASS=$askpass /usr/bin/sudo -A "$@"

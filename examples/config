@@ -1,0 +1,26 @@
+# ~/.config/secret-prompt/config
+#
+# `secret-prompt --dump-theme` prints the palette in effect, in this same
+# format, so it can seed this file.
+
+# catppuccin-mocha (default), catppuccin-macchiato, catppuccin-frappe,
+# catppuccin-latte, or system: latte in light mode, mocha in dark.
+theme = system
+
+# Any role overrides the preset, as #RRGGBB or #RRGGBBAA.
+# background  the tint over the blur, and the text on the main button
+# surface     the command and input wells
+# raised      the panel border and the Cancel button
+# muted       the placeholder and the eye
+# subtext     the message
+# command     the command line
+# text        the title, the typed value, the Cancel label
+# accent      the icon, the input border, the main button, the caret
+# error       the "wrong password" line
+accent = #89B4FA
+
+# How strongly background tints the blur, 0 to 1.
+# opacity = 0.55
+
+# The blur's own lightness; the preset sets it, colors from the other side need it.
+# appearance = dark

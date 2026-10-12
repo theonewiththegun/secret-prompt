@@ -1,0 +1,25 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  make:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install shellcheck bash
+      - run: make
+      - run: lipo -archs build/secret-prompt
+      - run: make test
+      - run: TEST_BASH="$(brew --prefix)/bin/bash" make test
+      - run: make lint
+
+  nix:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/determinate-nix-action@v3
+      - run: nix build -L
+      - run: nix flake check -L
