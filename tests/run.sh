@@ -111,7 +111,7 @@ run() { "$test_bash" "$bin/$1" "${@:2}"; }
 expect_eq "with-secret --env hands the value to the command" \
   "$(run with-secret --env TOKEN -- sh -c 'printf %s "$TOKEN"')" s3cret
 expect_eq "with-secret --stdin feeds it with a newline" \
-  "$(run with-secret --stdin -- od -c | head -1 | tr -s ' ')" "0000000 s 3 c r e t \n"
+  "$(run with-secret --stdin -- od -An -tx1 | tr -d ' \n')" "7333637265740a"
 expect_eq "with-secret leaves other variables alone" \
   "$(TOKEN=outer run with-secret --env OTHER -- sh -c 'printf %s "$TOKEN"')" outer
 

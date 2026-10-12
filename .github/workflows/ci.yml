@@ -8,7 +8,7 @@ jobs:
   make:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: brew install shellcheck bash
       - run: make
       - run: lipo -archs build/secret-prompt
@@ -19,7 +19,7 @@ jobs:
   nix:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: DeterminateSystems/determinate-nix-action@v3
       - run: nix build -L
       - run: nix flake check -L
