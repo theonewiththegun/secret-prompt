@@ -103,6 +103,7 @@ A bad line is a warning on stderr and that one key falls back, not an error: a t
 ## What it guarantees
 
 - **Not in argv.** `--env` puts the value in one process's environment, and `--stdin` pipes it from a shell builtin rather than through a here-string, which bash may back with a temp file.
+- **Not readable by keyloggers**, even while the value is revealed: the panel holds secure event input for as long as it is open.
 - **Not on screen recordings.** The panel is excluded from screenshots and screen sharing (`SECRET_PROMPT_CAPTURABLE=1` lifts that, for taking screenshots like the ones above).
 - **The command is shown before it runs**, re-quoted for reading, so approving it is a decision rather than a reflex.
 - **A crash fails the caller**, rather than leaving an invisible panel that sudo waits on forever.

@@ -72,4 +72,4 @@ askpass=$dir/askpass
 } >"$askpass"
 chmod 700 "$askpass"
 
-SUDO_ASKPASS=$askpass /usr/bin/sudo -A "$@"
+SUDO_ASKPASS=$askpass /usr/bin/sudo -A -- "$@"

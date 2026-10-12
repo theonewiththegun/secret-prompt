@@ -74,6 +74,11 @@ expect_has "unknown key warns" "$warnings" ":2: unknown key 'colour'"
 expect_has "opacity out of range warns" "$warnings" ":3: opacity must be a number from 0 to 1"
 expect_has "line without = warns" "$warnings" ":4: expected key = value"
 
+out=$(theme "theme = catppuccin-latte   # a comment after a value" "accent = #89B4FA # and one after a color")
+expect_eq "comment after a value" "$(key theme <<<"$out")" catppuccin-latte
+expect_eq "comment after a color" "$(key accent <<<"$out")" "#89B4FA"
+expect_eq "comments do not warn" "$(cat "$work/stderr")" ""
+
 mkdir -p "$work/xdg/secret-prompt"
 echo "theme = catppuccin-frappe" >"$work/xdg/secret-prompt/config"
 out=$(env -u SECRET_PROMPT_CONFIG XDG_CONFIG_HOME="$work/xdg" "$panel" --dump-theme)
@@ -100,7 +105,7 @@ cp "$root/bin/asudo" "$root/bin/with-secret" "$bin/"
 cat >"$bin/secret-prompt" <<'EOF'
 #!/bin/sh
 printf '%s\n' "$@" >"$STUB_ARGS"
-[ -n "${STUB_CANCEL:-}" ] && exit 1
+[ -n "${STUB_EXIT:-}" ] && exit "$STUB_EXIT"
 echo 's3cret'
 EOF
 chmod 755 "$bin/secret-prompt"
@@ -126,12 +131,26 @@ expect_eq "displayed command is quoted for reading" \
   "$(sed -n '/^--command$/{n;p;}' "$STUB_ARGS")" "echo plain 'a b' \"it's\" 'x\$y' 'a'\\''\$b'"
 
 set +e
-STUB_CANCEL=1 run with-secret --env X -- touch "$work/ran" 2>"$work/stderr"
+STUB_EXIT=1 run with-secret --env X -- touch "$work/ran" 2>"$work/stderr"
 code=$?
 set -e
 expect_eq "cancel exits 1" "$code" 1
 expect_eq "cancel says what was not run" "$(cat "$work/stderr")" "with-secret: cancelled, touch was not run"
 if [[ -e $work/ran ]]; then fail "cancel does not run the command"; else pass "cancel does not run the command"; fi
+
+set +e
+STUB_EXIT=3 run with-secret --env X -- touch "$work/ran" 2>"$work/stderr"
+code=$?
+set -e
+expect_eq "a failing panel keeps its exit code" "$code" 3
+expect_eq "a failing panel is not called a cancel" "$(cat "$work/stderr")" \
+  "with-secret: secret-prompt failed with exit 3, touch was not run"
+
+expect_eq "--env secret, the script's own variable name" \
+  "$(run with-secret --env secret -- sh -c 'printf %s "$secret"')" s3cret
+
+body() { sed -n '/^display() {$/,/^}$/p' "$root/bin/$1"; }
+expect_eq "asudo and with-secret quote the command the same way" "$(body asudo)" "$(body with-secret)"
 
 for bad in "--env" "--env 1BAD -- true" "-- true" "--stdin" "--frob -- true"; do
   set +e

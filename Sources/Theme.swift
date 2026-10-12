@@ -106,7 +106,11 @@ struct Theme {
                 continue
             }
             let key = line[..<eq].trimmingCharacters(in: .whitespaces).lowercased()
-            var value = line[line.index(after: eq)...].trimmingCharacters(in: .whitespaces)
+            var value = String(line[line.index(after: eq)...]).trimmingCharacters(in: .whitespaces)
+            // A comment after a value needs whitespace before its #, since a color starts with one.
+            if let hash = value.range(of: #"\s#"#, options: .regularExpression) {
+                value = value[..<hash.lowerBound].trimmingCharacters(in: .whitespaces)
+            }
             if value.count >= 2, value.first == "\"", value.last == "\"" {
                 value = String(value.dropFirst().dropLast())
             }

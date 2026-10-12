@@ -1,7 +1,7 @@
-// secret-prompt: a translucent themed panel that asks for one secret and
-// prints it to stdout (exit 0), or exits 1 on cancel. Meant to be called by
-// asudo and with-secret, never bare by an agent. See docs/design.md.
+// secret-prompt: prints one secret typed into a themed panel, or exits 1 on cancel.
+// A building block for asudo and with-secret, never run bare by an agent; docs/design.md.
 import AppKit
+import Carbon
 
 func roundedMask(radius: CGFloat) -> NSImage {
     let edge = radius * 2 + 1
@@ -203,8 +203,9 @@ final class Prompt: NSObject, NSApplicationDelegate {
         eye.target = self
         eye.action = #selector(toggleReveal(_:))
         eye.refusesFirstResponder = true
-        eye.keyEquivalent = "h"
-        eye.keyEquivalentModifierMask = [.command, .shift]
+        // Shift is not stripped from the event's characters, so ⌘⇧H arrives as "H".
+        eye.keyEquivalent = "H"
+        eye.keyEquivalentModifierMask = [.command]
         eye.contentTintColor = theme["muted"]
         eye.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -301,5 +302,7 @@ let options = Options(arguments)
 let app = NSApplication.shared
 app.setActivationPolicy(.accessory)
 let delegate = Prompt(options, Theme.load())
+// The revealed field is a plain NSTextField, which would drop secure input; keep it on for the whole panel.
+EnableSecureEventInput()
 app.delegate = delegate
 app.run()
